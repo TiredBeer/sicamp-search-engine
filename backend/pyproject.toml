@@ -1,0 +1,15 @@
+[project]
+name = "sicamp-search-engine"
+version = "0.1.0"
+description = "Search and curate competitive programming problems"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+  "fastapi>=0.121,<1",
+  "uvicorn>=0.38,<1",
+  "sqlalchemy>=2.0.44,<3",
+  "psycopg[binary]>=3.2.12,<4",
+  "pgvector>=0.4.1,<1",
+  "httpx>=0.28.1,<1",
+  "pydantic-settings>=2.11,<3",
+]
+
