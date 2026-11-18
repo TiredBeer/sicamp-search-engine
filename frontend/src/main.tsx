@@ -1134,7 +1134,7 @@ function App() {
                   ))}
                 </div>
               )}
-              {health?.embedding_provider === "local" && (
+              {health?.embedding_provider === "hash" && (
                 <p className="mode-caption">
                   Деморежим: локальное текстовое ранжирование. Семантический
                   поиск доступен после подключения модели эмбеддингов.
@@ -1601,9 +1601,9 @@ function App() {
               {health?.llm_provider === "demo"
                 ? "Деморежим: автоматический анализ LLM отключён."
                 : "Анализ задач выполняется через LLM Gateway."}{" "}
-              {health?.embedding_provider === "local"
+              {health?.embedding_provider === "hash"
                 ? "Поиск использует локальное текстовое ранжирование."
-                : "Для поиска подключена внешняя модель эмбеддингов."}
+                : "Поиск использует семантическую модель эмбеддингов."}
             </div>
             <div className="management-grid">
               {[

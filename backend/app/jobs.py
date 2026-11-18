@@ -97,7 +97,7 @@ def run_job(job_id):
                             lookup = tag_lookup(session)
                             payload = data.model_dump()
                             payload["free_tags"] = list(dict.fromkeys(payload["free_tags"] + [t for t in payload["tags"] if normalize(t) not in lookup]))
-                            payload["tags"] = list({lookup[normalize(t)].name for t in payload["tags"] + payload["free_tags"] if normalize(t) in lookup})
+                            payload["tags"] = list({lookup[normalize(t)].name for t in payload["tags"] if normalize(t) in lookup})
                             if signature(payload) not in seen:
                                 src = inputs[index] if index < len(inputs) else {}
                                 payload.update(source="code" if src.get("code") else "llm", trusted=src.get("trusted", False) if src.get("code") else False)

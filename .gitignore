@@ -10,4 +10,5 @@ node_modules/
 dist/
 *.tsbuildinfo
 .local/
+model-cache/
 !**/.env.example

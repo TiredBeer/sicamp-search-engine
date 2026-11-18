@@ -56,10 +56,14 @@ def make_solution(session, problem, data, code=None, origin="", existing=None):
     lookup = tag_lookup(session)
     closed = {}
     free = {}
-    for name in data["tags"] + data["free_tags"]:
+    for name in data["tags"]:
         if tag := lookup.get(normalize(name)):
             closed[tag.id] = tag
         else:
+            free.setdefault(normalize(name), name)
+            add_pending(session, name)
+    for name in data["free_tags"]:
+        if normalize(name) not in lookup:
             free.setdefault(normalize(name), name)
             add_pending(session, name)
     # Historic free_tags must survive promotion to the closed vocabulary.

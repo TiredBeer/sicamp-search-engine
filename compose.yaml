@@ -17,10 +17,10 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://sicamp:${POSTGRES_PASSWORD:-sicamp}@db:5432/sicamp
-      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://llm-gateway.sicamp.ru/v1}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-nebius/deepseek-ai/DeepSeek-V4-Pro}
+      LLM_MODEL: ${LLM_MODEL:-nebius/Qwen/Qwen3-235B-A22B-Instruct-2507}
       LLM_TIMEOUT: ${LLM_TIMEOUT:-180}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-12000}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-local}
@@ -28,7 +28,12 @@ services:
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
       EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-384}
+      EMBEDDING_LOCAL_MODEL: ${EMBEDDING_LOCAL_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      EMBEDDING_CACHE_DIR: /app/model-cache
+      EMBEDDING_THREADS: ${EMBEDDING_THREADS:-2}
       SEED_DEMO: ${SEED_DEMO:-true}
+    volumes:
+      - embedding_models:/app/model-cache
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -39,6 +44,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+      start_period: 5m
     restart: unless-stopped
   frontend:
     build: ./frontend
@@ -50,3 +56,4 @@ services:
     restart: unless-stopped
 volumes:
   postgres_data:
+  embedding_models:

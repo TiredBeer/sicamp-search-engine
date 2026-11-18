@@ -61,11 +61,11 @@ class ManualSolution(SolutionInput):
 class Analysis(BaseModel):
     model_config = ConfigDict(extra="ignore")
     statement: Statement
-    solutions: list[SolutionData] = Field(default_factory=list, max_length=100)
+    solutions: list[SolutionData] = Field(max_length=100)
 
 
 class TagAnalysis(BaseModel):
-    solutions: list[SolutionData] = Field(default_factory=list, max_length=100)
+    solutions: list[SolutionData] = Field(max_length=100)
 
 
 class ProblemInput(BaseModel):

@@ -36,7 +36,8 @@ def health():
     with Session() as session:
         session.execute(text("SELECT 1"))
     return {"status": "ok", "llm_provider": settings.llm_provider, "embedding_provider": settings.embedding_provider,
-            "embedding_model": embedder.identity, "llm_configured": bool(settings.llm_api_key)}
+            "embedding_model": embedder.identity, "semantic_search": settings.embedding_provider != "hash",
+            "llm_model": settings.llm_model, "llm_configured": bool(settings.llm_api_key)}
 
 
 @app.get("/api/stats")
@@ -86,7 +87,7 @@ def search(q: str = Query(default="", max_length=4000), tags: list[str] = Query(
             mismatch = session.scalar(select(func.count()).select_from(SearchRecord).where(SearchRecord.model != embedder.identity))
             if mismatch:
                 raise HTTPException(409, "Модель эмбеддингов изменилась. Перестройте поисковый индекс.")
-            vector = embedder.embed(processed)
+            vector = embedder.embed(processed, query=True)
             # Exact cosine ranking after filtering avoids HNSW post-filter recall loss.
             session.execute(text("SET LOCAL enable_indexscan = off"))
             distance = SearchRecord.embedding.cosine_distance(vector)
