@@ -12,3 +12,5 @@ dist/
 .local/
 model-cache/
 !**/.env.example
+
+промт.md
