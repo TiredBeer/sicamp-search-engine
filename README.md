@@ -2,6 +2,8 @@
 
 Python **3.14**, **uv**, FastAPI без DI, SQLAlchemy, **PostgreSQL + pgvector**, React и TypeScript. Два контейнера приложения (`backend`, `frontend`) и отдельный контейнер БД. Все данные, включая теги и очередь переиндексации, находятся в PostgreSQL.
 
+Пошаговая инструкция первого запуска и проверки приложения: [LOCAL_SETUP.md](LOCAL_SETUP.md).
+
 ## Запуск
 
 Из корня репозитория при запущенном Docker Desktop:
