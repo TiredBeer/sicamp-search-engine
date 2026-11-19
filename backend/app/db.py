@@ -63,6 +63,14 @@ class Solution(Base):
     tags: Mapped[list[Tag]] = relationship(secondary=solution_tags, lazy="selectin")
 
 
+class ImportRecord(Base):
+    __tablename__ = "import_records"
+    key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    payload_hash: Mapped[str] = mapped_column(String(64))
+    problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id", ondelete="CASCADE"), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 class SearchRecord(Base):
     __tablename__ = "search_records"
     problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id", ondelete="CASCADE"), primary_key=True)

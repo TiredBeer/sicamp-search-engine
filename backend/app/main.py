@@ -1,12 +1,15 @@
 from contextlib import asynccontextmanager
+import hashlib
+import json
+from threading import Lock
 from typing import Literal
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select, text, update
 
 from .config import settings
-from .db import FreeTag, Job, Problem, SearchRecord, Session, Solution, Tag, init_db
+from .db import FreeTag, ImportRecord, Job, Problem, SearchRecord, Session, Solution, Tag, init_db
 from .jobs import create_job, run_job, serialize_job
 from .providers import analyzer, embedder, normalize, query_enricher, reranker
 from .schemas import InternalProblemInput, ManualSolution, ProblemEdit, ProblemInput, TagInput
@@ -101,12 +104,15 @@ def search(q: str = Query(default="", max_length=4000), tags: list[str] = Query(
         return {"items": reranker.process(items), "total": total, "query": processed, "offset": offset, "limit": limit}
 
 
-def add_problem(payload):
+def add_problem(payload, import_key=None, payload_hash=None):
     inputs = [s.model_dump() for s in payload.solutions]
     with Session() as session:
         closed = [t.name for t in session.scalars(select(Tag))]
     analysis = analyzer.analyze(payload.title, payload.statement, inputs, closed)
     validate_analysis(analysis, inputs)
+    if import_key and any(s.difficulty is None or not s.complexity.time.strip()
+                          or not s.complexity.memory.strip() for s in analysis.solutions):
+        raise HTTPException(502, "LLM не указала сложность или асимптотику решения. Импорт не сохранён.")
     if payload.abstract is not None:
         analysis.statement.abstract = payload.abstract
     with write_lock, Session.begin() as session:
@@ -115,6 +121,8 @@ def add_problem(payload):
         session.flush()
         attach_analysis(session, problem, analysis, inputs)
         refresh_search(session, problem)
+        if import_key:
+            session.add(ImportRecord(key=import_key, payload_hash=payload_hash, problem_id=problem.id))
         return problem_json(problem)
 
 
@@ -123,9 +131,31 @@ def create_problem(payload: ProblemInput):
     return add_problem(payload)
 
 
-@app.post("/api/internal/problems", status_code=201)
-def internal_create_problem(payload: InternalProblemInput):
-    return add_problem(payload)
+import_lock = Lock()
+
+
+@app.post("/api/internal/problems", status_code=201,
+          responses={200: {"description": "Этот импорт уже выполнен"},
+                     409: {"description": "Исходные данные ранее импортированной задачи изменились"}})
+def internal_create_problem(payload: InternalProblemInput, response: Response,
+                            import_key: str | None = Header(default=None, min_length=1, max_length=200)):
+    if import_key is None:
+        return add_problem(payload)
+    payload_hash = hashlib.sha256(json.dumps(payload.model_dump(), sort_keys=True,
+                                            ensure_ascii=False).encode("utf-8")).hexdigest()
+    # One worker: serialize import requests even if a client disconnects and
+    # restarts. The receipt commits with the problem, code and search vector.
+    with import_lock:
+        with Session() as session:
+            record = session.get(ImportRecord, import_key)
+            if record:
+                if record.payload_hash != payload_hash:
+                    raise HTTPException(409, "Эта задача уже импортирована с другими исходными данными. Измените существующую задачу через интерфейс.")
+                response.status_code = 200
+                return problem_json(get_problem(session, record.problem_id))
+        if settings.llm_provider != "gateway" or not settings.llm_api_key:
+            raise HTTPException(503, "Для импорта с анализом решений настройте LLM Gateway и ключ.")
+        return add_problem(payload, import_key, payload_hash)
 
 
 @app.get("/api/problems/{problem_id}")
